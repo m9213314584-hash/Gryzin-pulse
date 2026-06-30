@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Учёт давления</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    background: linear-gradient(180deg, #e8f1fb 0%, #ffffff 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    padding: 28px 24px 32px;
+    max-width: 480px;
+    width: 100%;
+  }
+  h1 {
+    text-align: center;
+    font-size: 26px;
+    color: #1a3a5c;
+    margin: 0 0 4px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #6b7c93;
+    font-size: 16px;
+    margin-bottom: 24px;
+  }
+  .who-select {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .who-btn {
+    flex: 1;
+    padding: 18px 8px;
+    font-size: 19px;
+    font-weight: 600;
+    border: 3px solid #d6e4f5;
+    border-radius: 16px;
+    background: #f7fafd;
+    color: #1a3a5c;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .who-btn.active {
+    border-color: #2e7dd1;
+    background: #2e7dd1;
+    color: #fff;
+  }
+  label {
+    display: block;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a3a5c;
+    margin: 18px 0 8px;
+  }
+  .row {
+    display: flex;
+    gap: 12px;
+  }
+  input[type=number] {
+    width: 100%;
+    font-size: 28px;
+    text-align: center;
+    padding: 16px 8px;
+    border: 3px solid #d6e4f5;
+    border-radius: 16px;
+    background: #f7fafd;
+    color: #1a3a5c;
+    -moz-appearance: textfield;
+  }
+  input[type=number]:focus {
+    outline: none;
+    border-color: #2e7dd1;
+    background: #fff;
+  }
+  .hint {
+    font-size: 14px;
+    color: #8a9bb0;
+    margin-top: 4px;
+  }
+  button.submit {
+    width: 100%;
+    margin-top: 28px;
+    padding: 20px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    background: #2e7dd1;
+    border: none;
+    border-radius: 18px;
+    cursor: pointer;
+  }
+  button.submit:active { background: #2566ad; }
+  button.submit:disabled { background: #aac4e0; }
+  .status {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 18px;
+    font-weight: 600;
+    min-height: 26px;
+  }
+  .status.ok { color: #1f9d55; }
+  .status.err { color: #d23b3b; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>🩺 Давление</h1>
+    <div class="subtitle">Запись результатов измерения</div>
+
+    <label>Кто измерял?</label>
+    <div class="who-select">
+      <button type="button" class="who-btn" data-who="Бабушка">Бабушка</button>
+      <button type="button" class="who-btn" data-who="Дедушка">Дедушка</button>
+    </div>
+
+    <label>Давление (мм рт. ст.)</label>
+    <div class="row">
+      <div style="flex:1">
+        <input type="number" id="systolic" inputmode="numeric" placeholder="120">
+        <div class="hint">Верхнее</div>
+      </div>
+      <div style="flex:1">
+        <input type="number" id="diastolic" inputmode="numeric" placeholder="80">
+        <div class="hint">Нижнее</div>
+      </div>
+    </div>
+
+    <label>Пульс (уд/мин)</label>
+    <input type="number" id="pulse" inputmode="numeric" placeholder="70">
+
+    <button class="submit" id="submitBtn">Сохранить</button>
+    <div class="status" id="status"></div>
+  </div>
+
+<script>
+  let selectedWho = null;
+  document.querySelectorAll('.who-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.who-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedWho = btn.dataset.who;
+    });
+  });
+
+  const statusEl = document.getElementById('status');
+  const submitBtn = document.getElementById('submitBtn');
+
+  submitBtn.addEventListener('click', async () => {
+    const systolic = document.getElementById('systolic').value;
+    const diastolic = document.getElementById('diastolic').value;
+    const pulse = document.getElementById('pulse').value;
+
+    if (!selectedWho) {
+      showStatus('Выберите, кто измерял', 'err');
+      return;
+    }
+    if (!systolic || !diastolic || !pulse) {
+      showStatus('Заполните все поля', 'err');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Сохраняю...';
+
+    try {
+      const resp = await fetch('/api/measurement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ who: selectedWho, systolic, diastolic, pulse })
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        showStatus('✅ Сохранено!', 'ok');
+        document.getElementById('systolic').value = '';
+        document.getElementById('diastolic').value = '';
+        document.getElementById('pulse').value = '';
+      } else {
+        showStatus(data.error || 'Ошибка сохранения', 'err');
+      }
+    } catch (e) {
+      showStatus('Нет связи с сервером', 'err');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Сохранить';
+    }
+  });
+
+  function showStatus(text, type) {
+    statusEl.textContent = text;
+    statusEl.className = 'status ' + type;
+    if (type === 'ok') {
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    }
+  }
+</script>
+</body>
+</html>
