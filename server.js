@@ -15,7 +15,19 @@ const PORT = process.env.PORT || 3000;
 // --- Конфигурация из переменных окружения ---
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
-const GOOGLE_PRIVATE_KEY = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+
+// Иногда ключ из Variables приходит с экранированными кавычками или без реальных переносов строк —
+// нормализуем по возможности, чтобы избежать ошибки OpenSSL "DECODER routines::unsupported".
+function normalizePrivateKey(raw) {
+  let key = (raw || '').trim();
+  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+    key = key.slice(1, -1);
+  }
+  key = key.replace(/\\n/g, '\n');
+  return key;
+}
+
+const GOOGLE_PRIVATE_KEY = normalizePrivateKey(process.env.GOOGLE_PRIVATE_KEY);
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_IDS = (process.env.TELEGRAM_CHAT_IDS || '')
@@ -132,6 +144,19 @@ app.post('/api/measurement', async (req, res) => {
 });
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+
+app.get('/api/debug-key', (req, res) => {
+  const key = GOOGLE_PRIVATE_KEY;
+  res.json({
+    length: key.length,
+    startsCorrect: key.startsWith('-----BEGIN PRIVATE KEY-----'),
+    endsCorrect: key.trim().endsWith('-----END PRIVATE KEY-----'),
+    lineCount: key.split('\n').length,
+    hasLiteralBackslashN: key.includes('\\n'),
+    first40: key.slice(0, 40),
+    last40: key.slice(-40),
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
