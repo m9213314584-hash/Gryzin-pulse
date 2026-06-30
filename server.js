@@ -39,11 +39,12 @@ async function appendToSheet(entry) {
   try {
     await sheet.loadHeaderRow();
   } catch (e) {
-    await sheet.setHeaderRow(['Дата', 'Время', 'Кто', 'Систолическое', 'Диастолическое', 'Пульс']);
+    await sheet.setHeaderRow(['Дата', 'Время суток', 'Время', 'Кто', 'Систолическое', 'Диастолическое', 'Пульс']);
   }
 
   await sheet.addRow({
     'Дата': entry.date,
+    'Время суток': entry.timeOfDay,
     'Время': entry.time,
     'Кто': entry.who,
     'Систолическое': entry.systolic,
@@ -53,26 +54,32 @@ async function appendToSheet(entry) {
 }
 
 // --- Telegram ---
-function buildMessage(entry) {
-  let warning = '';
-  if (entry.systolic >= 180 || entry.diastolic >= 110) {
-    warning = '\n⚠️ Очень высокое давление! Рекомендуем обратиться к врачу.';
-  } else if (entry.systolic < 90 || entry.diastolic < 60) {
-    warning = '\n⚠️ Низкое давление, будьте внимательны.';
+function personWarning(p) {
+  if (p.systolic >= 180 || p.diastolic >= 110) {
+    return `\n⚠️ ${p.who}: очень высокое давление! Рекомендуем обратиться к врачу.`;
+  } else if (p.systolic < 90 || p.diastolic < 60) {
+    return `\n⚠️ ${p.who}: низкое давление, будьте внимательны.`;
   }
+  return '';
+}
+
+function buildMessage(date, time, timeOfDay, people) {
+  const lines = people.map(p =>
+    `${p.who}: ${p.systolic}/${p.diastolic} мм рт.ст., пульс ${p.pulse} уд/мин`
+  ).join('\n');
+
+  const warnings = people.map(personWarning).join('');
 
   return (
-    `🩺 Новое измерение давления\n\n` +
-    `Кто: ${entry.who}\n` +
-    `Дата: ${entry.date}, ${entry.time}\n` +
-    `Давление: ${entry.systolic}/${entry.diastolic} мм рт.ст.\n` +
-    `Пульс: ${entry.pulse} уд/мин` +
-    warning
+    `🩺 Новое измерение давления (${timeOfDay})\n\n` +
+    `Дата: ${date}, ${time}\n\n` +
+    lines +
+    warnings
   );
 }
 
-async function sendTelegramMessages(entry) {
-  const text = buildMessage(entry);
+async function sendTelegramMessages(date, time, timeOfDay, people) {
+  const text = buildMessage(date, time, timeOfDay, people);
   const results = await Promise.allSettled(
     CHAT_IDS.map(chatId =>
       fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
@@ -88,27 +95,34 @@ async function sendTelegramMessages(entry) {
 // --- API эндпоинт ---
 app.post('/api/measurement', async (req, res) => {
   try {
-    const { who, systolic, diastolic, pulse } = req.body;
+    const { timeOfDay, people } = req.body;
 
-    if (!who || !systolic || !diastolic || !pulse) {
-      return res.status(400).json({ error: 'Заполните все поля' });
+    if (!timeOfDay || !Array.isArray(people) || people.length !== 2) {
+      return res.status(400).json({ error: 'Заполните все поля для обоих' });
+    }
+
+    for (const p of people) {
+      if (!p.who || !p.systolic || !p.diastolic || !p.pulse) {
+        return res.status(400).json({ error: `Заполните все поля для ${p.who || 'каждого'}` });
+      }
     }
 
     const now = new Date();
     const date = now.toLocaleDateString('ru-RU', { timeZone: 'Europe/Amsterdam' });
     const time = now.toLocaleTimeString('ru-RU', { timeZone: 'Europe/Amsterdam', hour: '2-digit', minute: '2-digit' });
 
-    const entry = {
-      who,
-      systolic: Number(systolic),
-      diastolic: Number(diastolic),
-      pulse: Number(pulse),
-      date,
-      time,
-    };
+    const normalizedPeople = people.map(p => ({
+      who: p.who,
+      systolic: Number(p.systolic),
+      diastolic: Number(p.diastolic),
+      pulse: Number(p.pulse),
+    }));
 
-    await appendToSheet(entry);
-    await sendTelegramMessages(entry);
+    for (const p of normalizedPeople) {
+      await appendToSheet({ ...p, date, timeOfDay, time });
+    }
+
+    await sendTelegramMessages(date, time, timeOfDay, normalizedPeople);
 
     res.json({ success: true });
   } catch (err) {
