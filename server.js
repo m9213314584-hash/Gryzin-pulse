@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
@@ -12,13 +11,13 @@ app.use(express.static('public'));
 
 const PORT = process.env.PORT || 3000;
 
-// --- Конфигурация из переменных окружения ---
-const SHEET_ID = process.env.GOOGLE_SHEET_ID;
-const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
-const GOOGLE_PRIVATE_KEY = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+// --- Конфигурация (зашита в код, как в проекте SendMax) ---
+const SHEET_ID = process.env.GOOGLE_SHEET_ID || '1pNX6lvh6KQVsy35xOzvErwnuIxpDIYBkdLUplVnOaLo';
+const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL || 'gryzin-pulse@gryzin-pulse.iam.gserviceaccount.com';
+const GOOGLE_PRIVATE_KEY = (process.env.GOOGLE_PRIVATE_KEY || "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDlzNrMg9CQXccJ\nUDGQJo/temv0QfVfo747abUj8/X9x1jU99J1rUS8+LJe82KJczdwVomOX5kGeOJh\nQ8OOSnSs2IsX61hNU6MVkSSXVMPzhGzBlvDVAl3QEbN3JEyffCcMstVjznjTy7rC\nx3EzTfWJJiuCZG4RYhzKRWTMLWiqBcM/d4ITRstsLM2rZlXbUav3tdM0WemSGvRN\nI9qEQn8yoqSdBMdXNfpdWnt1jaVbXoMbT2D9RcHOis2FmJk1GKgXkF3AVgYjMcog\nGx36PWq55+4ReIl0xFg1TNOAFWOlvTALic2N2Mi42fQLodu326ccmRkrdQDm8p/T\n9T8qKZ/tAgMBAAECggEAHkFQ41FNgdxe6qp8xApXs8AE+5U9jZh84MyjlTa3AfEf\nkHaKZoToAmtJ7Ldll0wsleVG2hBbEN+UipLF6fOClgkykvUg3Jlw5NOFukjmPacH\nPJu3XIwhttXFx59nWS4a5BCdiLTz8oqlraRdkpAmjiaQ3uuDFFXTDYyCX2FxIMU+\nl/1uM5DZoWlyuimJTb0zvXPJRvVlZOlpg41W/1aQRcFDVulakhs8uoty5IaC9r+n\n0ThetuHEtX7TAFt7/Y2XwyifBoE1ucZJIKaDo/NFNveM6u/SroGHhtkB7zT/S3tB\nfK2NsFxXUckBpd8WYHl6YyBEeDoQu7/ABXejCoArAQKBgQDyxyAF7gYbmuNXpFSZ\nLAuf++2Jrx3/PeaCVaOhzYXHEIZblm1/Wq4rpgQJaY6o0D/oxnWBypX2evwDqO7P\neVjUrFJN+aWj904xdkbZU1XzlzAeWhVEJhl462I7lDIpSay3v2lYwWpRPgSDbc+u\nuctHzjvcOb7WuL/SvAf7m9rVbQKBgQDyUMrGAcRSphJRHa8lx4Nb0YwvghlLvQRL\nXks7JDMYhM3DXHZkvKxk95DpDOsq98d2c0k41fTU4wlhpM/BEaOSTXVFOKfrwy+3\nIq6fz7d4fkx40N3M+XOVNWYvxsYIk1JSSw630tqewgt4J/QUh0XqEMQ7SGslx7T7\nMV0G96vkgQKBgFBBtXtgWVKM3HTflTvhjKJBpR/r7Q2wx9/0MZjOmVfaRaBHVUFR\nl9xEEHeQFqIF3eq0mKnkb7jApUkMco3RvqTnpnmyeqh+m7HMONWlL/fL1hNikj8q\nHSeVIK8zaXWurlM8CrZVkjDzQIi2J37KWsINEkrWKBlRj9A5aqYpuqjtAoGBAKiA\nQBFjBydF7rTThIkr7Q97bxVWTcraHNNgNcZhjNp+9yrj8Dxq6yKm+PDml93gQab/\n0iogtkkXu91Xo1SptGo3TNYe6L5Mk7CxAGeHJRk4EmttKt+vk41tfaq5edpav8MU\nCJ8RlA8T9q/OcK+ZxadXk216FXBHKHYIxJzku3aBAoGAfPXn4F8b3iIDkuQLm10C\niGDFeDp1aO5ulVriZxw6tx1gQ+qIF7bS576iEyks+wcQ2PM1SpTFQVABwGqXIvX4\nniiRbyUOPN0/oACDuwD93DWeoqm4g3lmhYiqJupxd/5bSNGlpGgvpY/2tPvoEtd7\nL0h/X5vkr+6WEB1dlCxy17w=\n-----END PRIVATE KEY-----\n").replace(/\\n/g, '\n');
 
-const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const CHAT_IDS = (process.env.TELEGRAM_CHAT_IDS || '')
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8744433294:AAF5wZlAwVcw1Gj2KUDxj-pMbeqdH3pvyDI';
+const CHAT_IDS = (process.env.TELEGRAM_CHAT_IDS || '64796,69173782')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
@@ -35,7 +34,6 @@ async function appendToSheet(entry) {
   await doc.loadInfo();
   const sheet = doc.sheetsByIndex[0];
 
-  // Если в таблице ещё нет заголовков — создадим их
   try {
     await sheet.loadHeaderRow();
   } catch (e) {
