@@ -33,17 +33,24 @@
     text-align: center;
     color: #6b7c93;
     font-size: 16px;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
   }
-  .who-select {
+  label.section-label {
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a3a5c;
+    margin: 0 0 10px;
+  }
+  .time-select {
     display: flex;
     gap: 12px;
-    margin-bottom: 24px;
+    margin-bottom: 26px;
   }
-  .who-btn {
+  .time-btn {
     flex: 1;
-    padding: 18px 8px;
-    font-size: 19px;
+    padding: 16px 8px;
+    font-size: 18px;
     font-weight: 600;
     border: 3px solid #d6e4f5;
     border-radius: 16px;
@@ -52,29 +59,41 @@
     cursor: pointer;
     transition: all 0.15s;
   }
-  .who-btn.active {
+  .time-btn.active {
     border-color: #2e7dd1;
     background: #2e7dd1;
     color: #fff;
   }
-  label {
-    display: block;
-    font-size: 18px;
-    font-weight: 600;
+  .person {
+    border: 2px solid #e7eef8;
+    border-radius: 20px;
+    padding: 18px 16px 20px;
+    margin-bottom: 18px;
+  }
+  .person-name {
+    font-size: 20px;
+    font-weight: 700;
     color: #1a3a5c;
-    margin: 18px 0 8px;
+    margin-bottom: 14px;
+  }
+  label.field-label {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    color: #5c6f88;
+    margin: 12px 0 6px;
   }
   .row {
     display: flex;
-    gap: 12px;
+    gap: 10px;
   }
   input[type=number] {
     width: 100%;
-    font-size: 28px;
+    font-size: 24px;
     text-align: center;
-    padding: 16px 8px;
+    padding: 14px 8px;
     border: 3px solid #d6e4f5;
-    border-radius: 16px;
+    border-radius: 14px;
     background: #f7fafd;
     color: #1a3a5c;
     -moz-appearance: textfield;
@@ -85,13 +104,14 @@
     background: #fff;
   }
   .hint {
-    font-size: 14px;
+    font-size: 13px;
     color: #8a9bb0;
     margin-top: 4px;
+    text-align: center;
   }
   button.submit {
     width: 100%;
-    margin-top: 28px;
+    margin-top: 12px;
     padding: 20px;
     font-size: 22px;
     font-weight: 700;
@@ -112,6 +132,13 @@
   }
   .status.ok { color: #1f9d55; }
   .status.err { color: #d23b3b; }
+  .footer-note {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 15px;
+    color: #8a9bb0;
+    line-height: 1.4;
+  }
 </style>
 </head>
 <body>
@@ -119,56 +146,92 @@
     <h1>🩺 Давление</h1>
     <div class="subtitle">Запись результатов измерения</div>
 
-    <label>Кто измерял?</label>
-    <div class="who-select">
-      <button type="button" class="who-btn" data-who="Бабушка">Бабушка</button>
-      <button type="button" class="who-btn" data-who="Дедушка">Дедушка</button>
+    <label class="section-label">Время измерения</label>
+    <div class="time-select">
+      <button type="button" class="time-btn" data-time="Утро">☀️ Утро</button>
+      <button type="button" class="time-btn" data-time="Вечер">🌙 Вечер</button>
     </div>
 
-    <label>Давление (мм рт. ст.)</label>
-    <div class="row">
-      <div style="flex:1">
-        <input type="number" id="systolic" inputmode="numeric" placeholder="120">
-        <div class="hint">Верхнее</div>
+    <div class="person">
+      <div class="person-name">Людмила</div>
+      <label class="field-label">Давление (мм рт. ст.)</label>
+      <div class="row">
+        <div style="flex:1">
+          <input type="number" id="ludmila-systolic" inputmode="numeric" placeholder="120">
+          <div class="hint">Верхнее</div>
+        </div>
+        <div style="flex:1">
+          <input type="number" id="ludmila-diastolic" inputmode="numeric" placeholder="80">
+          <div class="hint">Нижнее</div>
+        </div>
       </div>
-      <div style="flex:1">
-        <input type="number" id="diastolic" inputmode="numeric" placeholder="80">
-        <div class="hint">Нижнее</div>
-      </div>
+      <label class="field-label">Пульс (уд/мин)</label>
+      <input type="number" id="ludmila-pulse" inputmode="numeric" placeholder="70">
     </div>
 
-    <label>Пульс (уд/мин)</label>
-    <input type="number" id="pulse" inputmode="numeric" placeholder="70">
+    <div class="person">
+      <div class="person-name">Геннадий</div>
+      <label class="field-label">Давление (мм рт. ст.)</label>
+      <div class="row">
+        <div style="flex:1">
+          <input type="number" id="gennady-systolic" inputmode="numeric" placeholder="120">
+          <div class="hint">Верхнее</div>
+        </div>
+        <div style="flex:1">
+          <input type="number" id="gennady-diastolic" inputmode="numeric" placeholder="80">
+          <div class="hint">Нижнее</div>
+        </div>
+      </div>
+      <label class="field-label">Пульс (уд/мин)</label>
+      <input type="number" id="gennady-pulse" inputmode="numeric" placeholder="70">
+    </div>
 
     <button class="submit" id="submitBtn">Сохранить</button>
     <div class="status" id="status"></div>
+    <div class="footer-note">Спасибо, что помогаете следить за вашим здоровьем! Мы вас любим! ❤️</div>
   </div>
 
 <script>
-  let selectedWho = null;
-  document.querySelectorAll('.who-btn').forEach(btn => {
+  let selectedTime = null;
+  document.querySelectorAll('.time-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.who-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      selectedWho = btn.dataset.who;
+      selectedTime = btn.dataset.time;
     });
   });
 
   const statusEl = document.getElementById('status');
   const submitBtn = document.getElementById('submitBtn');
 
-  submitBtn.addEventListener('click', async () => {
-    const systolic = document.getElementById('systolic').value;
-    const diastolic = document.getElementById('diastolic').value;
-    const pulse = document.getElementById('pulse').value;
+  function val(id) { return document.getElementById(id).value; }
 
-    if (!selectedWho) {
-      showStatus('Выберите, кто измерял', 'err');
+  submitBtn.addEventListener('click', async () => {
+    if (!selectedTime) {
+      showStatus('Выберите утро или вечер', 'err');
       return;
     }
-    if (!systolic || !diastolic || !pulse) {
-      showStatus('Заполните все поля', 'err');
-      return;
+
+    const people = [
+      {
+        who: 'Людмила',
+        systolic: val('ludmila-systolic'),
+        diastolic: val('ludmila-diastolic'),
+        pulse: val('ludmila-pulse'),
+      },
+      {
+        who: 'Геннадий',
+        systolic: val('gennady-systolic'),
+        diastolic: val('gennady-diastolic'),
+        pulse: val('gennady-pulse'),
+      },
+    ];
+
+    for (const p of people) {
+      if (!p.systolic || !p.diastolic || !p.pulse) {
+        showStatus(`Заполните все поля для ${p.who}`, 'err');
+        return;
+      }
     }
 
     submitBtn.disabled = true;
@@ -178,14 +241,15 @@
       const resp = await fetch('/api/measurement', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ who: selectedWho, systolic, diastolic, pulse })
+        body: JSON.stringify({ timeOfDay: selectedTime, people })
       });
       const data = await resp.json();
       if (resp.ok) {
         showStatus('✅ Сохранено!', 'ok');
-        document.getElementById('systolic').value = '';
-        document.getElementById('diastolic').value = '';
-        document.getElementById('pulse').value = '';
+        ['ludmila-systolic','ludmila-diastolic','ludmila-pulse',
+         'gennady-systolic','gennady-diastolic','gennady-pulse'].forEach(id => {
+          document.getElementById(id).value = '';
+        });
       } else {
         showStatus(data.error || 'Ошибка сохранения', 'err');
       }
